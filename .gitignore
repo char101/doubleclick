@@ -1,0 +1,6 @@
+syntax: glob
+*.exe
+*.exp
+*.lib
+*.obj
+*.res
