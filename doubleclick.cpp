@@ -51,29 +51,31 @@ __declspec(dllexport) LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARA
 
     if (nCode == HC_ACTION)
     {
-        MSLLHOOKSTRUCT *pMouseStruct = (MSLLHOOKSTRUCT *)lParam;
-        bool blocked = false;
         if (wParam == WM_LBUTTONDOWN)
         {
             unsigned __int64 currentTime;
             QueryPerformanceCounter((LARGE_INTEGER *) &currentTime);
             unsigned __int64 elapsed = currentTime - previousClick;
             // Trace("LBUTTONDOWN elapsed = %I64u", elapsed);
+
             if (gMinDblClickElapsed == 0 || elapsed < gMinDblClickElapsed)
                 gMinDblClickElapsed = elapsed;
-            if (elapsed < gDoubleClickThreshold)
+
+            if (!blocked && elapsed < gDoubleClickThreshold)
             {
                 Trace("LBUTTONDOWN blocked, elapsed time = %I64u", currentTime - previousClick);
                 blocked = true;
                 ++gBlockedDblClick;
                 return 1;
-            }
-            blocked = false;
+            } else if (blocked)
+                blocked = false;
         }
         else if (wParam == WM_LBUTTONUP)
         {
-            if (blocked)
+            if (blocked) {
+                blocked = false;
                 return 1;
+            }
             else
                 QueryPerformanceCounter((LARGE_INTEGER *) &previousClick);
         }
@@ -124,7 +126,7 @@ LRESULT CALLBACK WndMainProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
             break;
         case WM_COMMAND:
             wmId = LOWORD(wParam);
-            wmEvent = HIWORD(wParam);
+            // wmEvent = HIWORD(wParam);
             switch (wmId)
             {
                 case SWM_EXIT:
