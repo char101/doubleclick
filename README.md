@@ -8,4 +8,4 @@ previous MOUSEUP.
 You can see the number of blocked double clicks and the minimum elapsed time
 between the double clicks in the tray context menu.
 
-## [Download Binary](https://github.com/char101/doubleclick/releases).
+[Download Binary](https://github.com/char101/doubleclick/releases)
