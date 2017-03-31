@@ -4,3 +4,4 @@ syntax: glob
 *.lib
 *.obj
 *.res
+*.zip

@@ -8,7 +8,7 @@
 #define CLASSNAME L"DoubleClickWnd"
 #define APPNAME L"Double Click Fixer"
 
-#define DOUBLE_CLICK_THRESHOLD_MS 100 // manually double clicking requires at least 200 ms
+#define DOUBLE_CLICK_THRESHOLD_MS 50
 
 #define ID_TRAYICON 1001
 #define SWM_TRAYMSG WM_APP
@@ -73,13 +73,9 @@ __declspec(dllexport) LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARA
         else if (wParam == WM_LBUTTONUP)
         {
             if (blocked)
-            {
                 return 1;
-            }
             else
-            {
                 QueryPerformanceCounter((LARGE_INTEGER *) &previousClick);
-            }
         }
     }
 
@@ -111,9 +107,7 @@ void ShowContextMenu(HWND hWnd)
         DestroyMenu(hMenu);
     }
     else
-    {
         Error(L"ShowContextMenu failed");
-    }
 
 }
 
@@ -214,9 +208,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*l
     Shell_NotifyIcon(NIM_ADD, &niData);
 
     if (niData.hIcon && DestroyIcon(niData.hIcon))
-    {
         niData.hIcon = NULL;
-    }
 
     hMouseHook = SetWindowsHookEx(WH_MOUSE_LL, (HOOKPROC) MouseProc, hInstance, NULL);
 
