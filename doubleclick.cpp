@@ -27,8 +27,7 @@ unsigned __int64 gMinDblClickElapsed = 0;
 
 // faulty double click = elapsed time between last mouseup - mousedown < THRESHOLD
 
-void CDECL Trace(PCSTR pszFormat, ...)
-{
+void CDECL Trace(PCSTR pszFormat, ...) {
     CHAR szTrace[1024];
 
     va_list args;
@@ -39,61 +38,54 @@ void CDECL Trace(PCSTR pszFormat, ...)
     OutputDebugStringA(szTrace);
 }
 
-void Error(const wchar_t *message)
-{
+void Error(const wchar_t *message) {
     MessageBox(gHWnd, message, APPNAME, MB_OK | MB_ICONEXCLAMATION);
 }
 
-__declspec(dllexport) LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
-{
+__declspec(dllexport) LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
     static bool blocked = false;
     static unsigned __int64 previousClick = 0;
 
-    if (nCode == HC_ACTION)
-    {
-        if (wParam == WM_LBUTTONDOWN)
-        {
+    if (nCode == HC_ACTION) {
+        if (wParam == WM_LBUTTONDOWN) {
             unsigned __int64 currentTime;
             QueryPerformanceCounter((LARGE_INTEGER *) &currentTime);
             unsigned __int64 elapsed = currentTime - previousClick;
             // Trace("LBUTTONDOWN elapsed = %I64u", elapsed);
 
-            if (gMinDblClickElapsed == 0 || elapsed < gMinDblClickElapsed)
+            if (gMinDblClickElapsed == 0 || elapsed < gMinDblClickElapsed) {
                 gMinDblClickElapsed = elapsed;
+            }
 
-            if (!blocked && elapsed < gDoubleClickThreshold)
-            {
+            if (!blocked && elapsed < gDoubleClickThreshold) {
                 Trace("LBUTTONDOWN blocked, elapsed time = %I64u", currentTime - previousClick);
                 blocked = true;
                 ++gBlockedDblClick;
                 return 1;
-            } else if (blocked)
+            } else if (blocked) {
                 blocked = false;
-        }
-        else if (wParam == WM_LBUTTONUP)
-        {
+            }
+        } else if (wParam == WM_LBUTTONUP) {
             if (blocked) {
                 blocked = false;
                 return 1;
-            }
-            else
+            } else {
                 QueryPerformanceCounter((LARGE_INTEGER *) &previousClick);
+            }
         }
     }
 
-    return CallNextHookEx(hMouseHook, nCode,wParam,lParam);
+    return CallNextHookEx(hMouseHook, nCode, wParam, lParam);
 }
 
-void ShowContextMenu(HWND hWnd)
-{
+void ShowContextMenu(HWND hWnd) {
     SetForegroundWindow(hWnd);
 
     POINT pt;
     GetCursorPos(&pt);
 
     HMENU hMenu = CreatePopupMenu();
-    if (hMenu)
-    {
+    if (hMenu) {
         wchar_t buffer[1024];
 
         swprintf(buffer, sizeof(buffer), L"Double click threshold: %I64u ms", gDoubleClickThresholdMs);
@@ -107,18 +99,16 @@ void ShowContextMenu(HWND hWnd)
 
         TrackPopupMenu(hMenu, TPM_BOTTOMALIGN, pt.x, pt.y, 0, hWnd, NULL);
         DestroyMenu(hMenu);
-    }
-    else
+    } else {
         Error(L"ShowContextMenu failed");
-
+    }
 }
 
 LRESULT CALLBACK WndMainProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
     int wmId, wmEvent;
     switch (message) {
         case SWM_TRAYMSG:
-            switch (lParam)
-            {
+            switch (lParam) {
                 case WM_RBUTTONUP:
                     ShowContextMenu(hWnd);
                     break;
@@ -127,8 +117,7 @@ LRESULT CALLBACK WndMainProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
         case WM_COMMAND:
             wmId = LOWORD(wParam);
             // wmEvent = HIWORD(wParam);
-            switch (wmId)
-            {
+            switch (wmId) {
                 case SWM_EXIT:
                     DestroyWindow(hWnd);
                     break;
@@ -148,14 +137,12 @@ LRESULT CALLBACK WndMainProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
     return 0;
 }
 
-int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpCmdLine*/, int /*nCmdShow*/)
-{
+int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpCmdLine*/, int /*nCmdShow*/) {
     // parse threshold value from command line
     int argc;
     LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     gDoubleClickThresholdMs = argc > 1 ? _wtoi(argv[1]) : DOUBLE_CLICK_THRESHOLD_MS;
-    if (gDoubleClickThresholdMs == 0)
-    {
+    if (gDoubleClickThresholdMs == 0) {
         Error(L"Invalid value for double click threshold");
         return 1;
     }
@@ -177,8 +164,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*l
     wc.lpszMenuName  = NULL;
     wc.lpszClassName = CLASSNAME;
 
-    if (!RegisterClass(&wc))
-    {
+    if (!RegisterClass(&wc)) {
         Error(L"RegisterClass failed");
         return false;
     }
@@ -187,8 +173,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*l
             WS_CAPTION | WS_CLIPCHILDREN | WS_OVERLAPPEDWINDOW,
             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
             0, 0, hInstance, 0);
-    if (!gHWnd)
-    {
+    if (!gHWnd) {
         Error(L"CreateWindow failed");
         return false;
     }
@@ -209,15 +194,15 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*l
 
     Shell_NotifyIcon(NIM_ADD, &niData);
 
-    if (niData.hIcon && DestroyIcon(niData.hIcon))
+    if (niData.hIcon && DestroyIcon(niData.hIcon)) {
         niData.hIcon = NULL;
+    }
 
     hMouseHook = SetWindowsHookEx(WH_MOUSE_LL, (HOOKPROC) MouseProc, hInstance, NULL);
 
     MSG msg;
     BOOL ret;
-    while ((ret = GetMessage(&msg, (HWND) NULL, 0, 0)) != 0 && ret != -1)
-    {
+    while ((ret = GetMessage(&msg, (HWND) NULL, 0, 0)) != 0 && ret != -1) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
