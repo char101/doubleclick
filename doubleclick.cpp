@@ -8,7 +8,8 @@
 #define CLASSNAME L"DoubleClickWnd"
 #define APPNAME L"Double Click Fixer"
 
-#define DOUBLE_CLICK_THRESHOLD_MS 65
+#define DOUBLE_CLICK_THRESHOLD_MS 60
+#define MAX_DOUBLE_CLICK_THRESHOLD_MS 500
 
 #define ID_TRAYICON 1001
 #define SWM_TRAYMSG WM_APP
@@ -22,8 +23,12 @@ HWND gHWnd = NULL;
 unsigned __int64 gTimerFrequency = 0;
 unsigned __int64 gDoubleClickThresholdMs = 0;
 unsigned __int64 gDoubleClickThreshold = 0;
+unsigned __int64 gMaxDoubleClickThreshold = 0;
 unsigned int gBlockedDblClick = 0;
 unsigned __int64 gMinDblClickElapsed = 0;
+unsigned __int64 gMaxDblClickElapsed = 0;
+unsigned __int64 gAvgDblClickElapsed = 0;
+unsigned __int64 gNumDblClick = 0;
 
 // faulty double click = elapsed time between last mouseup - mousedown < THRESHOLD
 
@@ -53,8 +58,16 @@ __declspec(dllexport) LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARA
             unsigned __int64 elapsed = currentTime - previousClick;
             // Trace("LBUTTONDOWN elapsed = %I64u", elapsed);
 
-            if (gMinDblClickElapsed == 0 || elapsed < gMinDblClickElapsed) {
-                gMinDblClickElapsed = elapsed;
+            if (elapsed <= gMaxDoubleClickThreshold) {
+                if (gMinDblClickElapsed == 0 || elapsed < gMinDblClickElapsed) {
+                    gMinDblClickElapsed = elapsed;
+                }
+                if (gMaxDblClickElapsed == 0 || elapsed > gMaxDblClickElapsed) {
+                    gMaxDblClickElapsed = elapsed;
+                }
+                // cannot pre-increment because it is used twice?
+                gAvgDblClickElapsed = ((gAvgDblClickElapsed * gNumDblClick) + elapsed) / (gNumDblClick + 1);
+                ++gNumDblClick;
             }
 
             if (!blocked && elapsed < gDoubleClickThreshold) {
@@ -92,7 +105,10 @@ void ShowContextMenu(HWND hWnd) {
         InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING | MF_GRAYED, SWM_DISABLED, buffer);
         swprintf(buffer, sizeof(buffer), L"Blocked %u double click(s)", gBlockedDblClick);
         InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING | MF_GRAYED, SWM_DISABLED, buffer);
-        swprintf(buffer, sizeof(buffer), L"Minimum delta: %.2f ms", 1000.0 * gMinDblClickElapsed / gTimerFrequency);
+        swprintf(buffer, sizeof(buffer), L"Delta (min/avg/max): %.2f/%.2f/%.2f ms",
+                 1000.0 * gMinDblClickElapsed / gTimerFrequency,
+                 1000.0 * gAvgDblClickElapsed / gTimerFrequency,
+                 1000.0 * gMaxDblClickElapsed / gTimerFrequency);
         InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING | MF_GRAYED, SWM_DISABLED, buffer);
         InsertMenu(hMenu, -1, MF_BYPOSITION | MF_SEPARATOR, 0, L"");
         InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING, SWM_EXIT, L"Exit");
@@ -181,6 +197,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*l
 
     QueryPerformanceFrequency((LARGE_INTEGER *) &gTimerFrequency);
     gDoubleClickThreshold = gDoubleClickThresholdMs * gTimerFrequency / 1000;
+    gMaxDoubleClickThreshold = MAX_DOUBLE_CLICK_THRESHOLD_MS * gTimerFrequency / 1000;
     Trace("Timer frequency = %I64u, double click threshold = %I64u", gTimerFrequency, gDoubleClickThreshold);
 
     ZeroMemory(&niData, sizeof(NOTIFYICONDATA));
