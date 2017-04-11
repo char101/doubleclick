@@ -8,7 +8,7 @@
 #define CLASSNAME L"DoubleClickWnd"
 #define APPNAME L"Double Click Fixer"
 
-#define DOUBLE_CLICK_THRESHOLD_MS 50
+#define DOUBLE_CLICK_THRESHOLD_MS 65
 
 #define ID_TRAYICON 1001
 #define SWM_TRAYMSG WM_APP
